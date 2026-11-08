@@ -1,1 +1,10 @@
-{"name":"smallmusic","version":"1.0.0","private":true,"scripts":{"dev":"node server.js","start":"node server.js","check":"node --check app.js"}}
+{
+  "name": "smallmusic",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "check": "node --check app.js && node --check model.js && node --test model.test.js"
+  }
+}
