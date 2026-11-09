@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmallSound — SmallNoise</title>
+  <link rel="stylesheet" href="/sounds/style.css">
+  <script defer src="/shared/audio.js"></script>
+  <script defer src="/sounds/catalog.js"></script>
+  <script defer src="/sounds/engine.js"></script>
+  <script defer src="/sounds/app.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="SmallSound · на главную SmallNoise">
+    <span class="brand-icon" aria-hidden="true">∿</span> SmallSound
+  </a>
+  <nav aria-label="Студии">
+    <a href="/music/">SmallMusic</a>
+    <a href="/sound/" aria-current="page">SmallSound</a>
+  </nav>
+</header>
+<main class="studio">
+  <aside class="panel catalog" aria-labelledby="catalog-title">
+    <div class="panel-head"><h2 id="catalog-title">Пресеты</h2><span class="badge" id="catalog-count"></span></div>
+    <div class="catalog-tools">
+      <input id="search" type="search" aria-label="Поиск пресетов" placeholder="Поиск звука…">
+      <select id="category" aria-label="Категория пресетов"></select>
+      <form id="material-form">
+        <span>Пара материалов</span>
+        <div class="material-pair">
+          <select id="material-a" aria-label="Первый материал"></select>
+          <span aria-hidden="true">×</span>
+          <select id="material-b" aria-label="Второй материал"></select>
+        </div>
+        <button type="submit">Создать удар</button>
+      </form>
+    </div>
+    <div class="preset-list" id="presets"></div>
+  </aside>
+
+  <section class="panel editor" aria-labelledby="sound-title">
+    <div class="editor-top">
+      <div>
+        <p class="eyebrow" id="sound-category"></p>
+        <h1 id="sound-title"></h1>
+      </div>
+      <div class="style-switch" role="group" aria-label="Стиль синтеза">
+        <button type="button" data-style="natural">Обычный</button>
+        <button type="button" data-style="retro">8-битный</button>
+      </div>
+    </div>
+    <div class="scope">
+      <canvas id="waveform" role="img" aria-label="Форма звуковой волны"></canvas>
+      <div class="scope-meta"><span>0 мс</span><span id="duration"></span></div>
+    </div>
+    <div class="transport">
+      <button class="primary" id="play" type="button">▶ Слушать</button>
+      <button id="reroll" type="button">↻ Новый вариант</button>
+      <label class="auto"><input type="checkbox" id="autoplay" checked> Автопрослушивание</label>
+    </div>
+    <div class="parameter-head"><h2>Параметры</h2><button class="quiet" id="reset" type="button">Сбросить</button></div>
+    <div class="controls" id="controls"></div>
+    <div class="editor-footer">
+      <div class="export">
+        <select id="format" aria-label="Формат аудио">
+          <option value="wav">WAV</option><option value="aiff">AIFF</option>
+        </select>
+        <button id="download" type="button">Скачать ↓</button>
+      </div>
+      <button id="save" type="button">Сохранить правки в историю</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </section>
+
+  <aside class="panel history" aria-labelledby="history-title">
+    <div class="panel-head"><h2 id="history-title">История</h2><span class="badge" id="history-count"></span></div>
+    <div class="history-tools">
+      <button id="favorites" type="button" aria-pressed="false">☆ Только избранное</button>
+      <p id="storage-status">Сохраняется в этом браузере</p>
+    </div>
+    <div class="history-list" id="history"></div>
+  </aside>
+</main>
+</body>
+</html>

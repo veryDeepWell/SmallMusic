@@ -1,10 +1,10 @@
 {
-  "name": "smallmusic",
+  "name": "smallnoise",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "check": "node --check app.js && node --check model.js && node --test model.test.js"
+    "check": "node --check music/app.js && node --check music/model.js && node --check music/sound-panel.js && node --check shared/audio.js && node --check shared/sound-settings.js && node --check sounds/app.js && node --test model.test.js sounds/engine.test.js"
   }
 }

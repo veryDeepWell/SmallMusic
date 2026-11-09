@@ -1,5 +1,38 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const root = __dirname;
-http.createServer((req,res)=>{const file=path.join(root,req.url.split('?')[0]==='/'?'index.html':decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(err,data)=>{if(err){res.writeHead(404).end();return;}res.setHeader('Content-Type',({'html':'text/html; charset=utf-8','css':'text/css','js':'text/javascript'})[file.split('.').pop()]||'application/octet-stream');res.end(data);});}).listen(5173,'127.0.0.1',()=>console.log('SmallMusic: http://127.0.0.1:5173'));
+
+const pages = new Map([
+  ['/', 'index.html'],
+  ['/index.html', 'index.html'],
+  ['/music', 'music/index.html'],
+  ['/music/', 'music/index.html'],
+  ['/sound', 'sounds/index.html'],
+  ['/sound/', 'sounds/index.html']
+]);
+const assets = new Set([
+  '/music/style.css', '/music/model.js', '/music/app.js', '/music/sound-panel.js',
+  '/sounds/style.css', '/sounds/catalog.js', '/sounds/engine.js', '/sounds/app.js',
+  '/shared/launcher.css', '/shared/sound-panel.css', '/shared/sound-settings.js', '/shared/audio.js'
+]);
+const contentTypes = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript' };
+
+http.createServer((request, response) => {
+  const route = request.url.split('?')[0];
+  const file = pages.get(route) || (assets.has(route) ? route.slice(1) : null);
+  if (!file) {
+    response.writeHead(404).end();
+    return;
+  }
+  fs.readFile(path.join(__dirname, file), (error, data) => {
+    if (error) {
+      response.writeHead(404).end();
+      return;
+    }
+    response.writeHead(200, {
+      'Content-Type': contentTypes[path.extname(file)] + '; charset=utf-8',
+      'Cache-Control': 'no-cache'
+    });
+    response.end(data);
+  });
+}).listen(5173, '127.0.0.1', () => console.log('SmallNoise: http://127.0.0.1:5173'));
