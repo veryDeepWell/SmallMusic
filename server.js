@@ -5,10 +5,14 @@ const path = require('node:path');
 const pages = new Map([
   ['/', 'index.html'],
   ['/index.html', 'index.html'],
-  ['/music', 'music/index.html'],
   ['/music/', 'music/index.html'],
-  ['/sound', 'sounds/index.html'],
-  ['/sound/', 'sounds/index.html']
+  ['/sounds/', 'sounds/index.html']
+]);
+const redirects = new Map([
+  ['/music', '/music/'],
+  ['/sounds', '/sounds/'],
+  ['/sound', '/sounds/'],
+  ['/sound/', '/sounds/']
 ]);
 const assets = new Set([
   '/music/style.css', '/music/model.js', '/music/app.js', '/music/sound-panel.js',
@@ -19,6 +23,11 @@ const contentTypes = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/ja
 
 http.createServer((request, response) => {
   const route = request.url.split('?')[0];
+  const redirect = redirects.get(route);
+  if (redirect) {
+    response.writeHead(308, { Location: redirect + request.url.slice(route.length) }).end();
+    return;
+  }
   const file = pages.get(route) || (assets.has(route) ? route.slice(1) : null);
   if (!file) {
     response.writeHead(404).end();
