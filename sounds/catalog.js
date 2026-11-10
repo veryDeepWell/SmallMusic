@@ -146,12 +146,17 @@
   ]) add(category, id, name, 'tones', duration, { frequency, notes, gap });
 
   const byId = Object.fromEntries(presets.map(preset => [preset.id, preset]));
+  const collision = {
+    id: 'collision', name: 'Столкновение', category: 'impacts',
+    keywords: 'удар стук металл металла ' + Object.values(materials).map(material => material.name).join(' ')
+  };
+  const entries = [collision, ...presets.filter(preset => preset.category !== 'impacts')];
   function impact(first, second) {
     const sorted = [first, second].sort((a, b) => materialIds.indexOf(a) - materialIds.indexOf(b));
     return byId[sorted.join('-')];
   }
 
-  const api = { categories, materials, presets, byId, impact };
+  const api = { categories, materials, presets, entries, collision, byId, impact };
   if (typeof module !== 'undefined') module.exports = api;
   else root.SoundCatalog = api;
 })(globalThis);

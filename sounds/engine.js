@@ -22,18 +22,21 @@
     };
   }
 
-  function create(presetId, style, seed) {
+  function create(presetId, style, seed, shotVersion = 2) {
     const preset = catalog.byId[presetId];
     const random = randomSource(seed);
+    const shot = preset.recipe === 'shot';
+    const modern = shot && shotVersion === 2 && style === 'natural';
     return {
       presetId, style, seed,
+      ...(shot ? { shotVersion } : {}),
       duration: Math.round(preset.duration * (875 + random() * 250)),
       pitch: Math.round(random() * 6 - 3),
       brightness: Math.round(42 + random() * 16),
       texture: Math.round(44 + random() * 12),
       decay: Math.round(43 + random() * 14),
-      drive: preset.recipe === 'shot' ? 18 : 4,
-      space: preset.recipe === 'shot' ? 24 : 5,
+      drive: modern ? 9 : shot ? 18 : 4,
+      space: modern ? 32 : shot ? 24 : 5,
       volume: 84
     };
   }
@@ -41,7 +44,7 @@
   function restore(data) {
     if (!Object.hasOwn(catalog.byId, data?.presetId) || !Object.hasOwn(styles, data.style)
       || !Number.isInteger(data.seed) || data.seed < 0 || data.seed > 0xffffffff) return null;
-    const settings = create(data.presetId, data.style, data.seed);
+    const settings = create(data.presetId, data.style, data.seed, data.shotVersion === 2 ? 2 : 1);
     for (const [key, field] of Object.entries(fields)) {
       if (Number.isFinite(data[key])) settings[key] = Math.round(clamp(data[key], field.min, field.max));
     }
@@ -55,6 +58,7 @@
     const random = randomSource(settings.seed ^ 0x93b74a21);
     const vary = amount => 1 + (random() * 2 - 1) * amount;
     const retro = settings.style === 'retro';
+    const modernShot = preset.recipe === 'shot' && settings.shotVersion === 2 && !retro;
     const pitch = 2 ** (settings.pitch / 12);
     const brightness = 2 ** ((settings.brightness - 50) / 32);
     const texture = settings.texture / 50;
@@ -97,7 +101,7 @@
       const pulseRate = options.pulses || 0;
       let filtered = 0;
       let low = 0;
-      let envelope = level * texture;
+      let envelope = level * (options.texture ?? texture);
       let white = 0;
       layer(start, length, i => {
         if (!retro || i % 5 === 0) white = random() * 2 - 1;
@@ -128,6 +132,38 @@
       }
     }
 
+    function firearm() {
+      const { count, color, weight } = preset;
+      const report = clamp(color / 7000, .18, 1);
+      const scale = clamp(duration / preset.duration, .25, 2);
+      const room = settings.space / 100;
+      const bodyTexture = .65 + .35 * texture;
+      for (let i = 0; i < count; i++) {
+        const start = i * duration * .77 / count * vary(.025);
+        const force = vary(.14);
+        const bass = (120 + 280 * (1 - weight)) * pitch * vary(.18);
+        const body = (.046 + .16 * weight ** 2) * scale * decay;
+        const tail = (.1 + weight ** 3 * preset.duration * .45) * scale * decay;
+
+        // The short pressure transient loses its top end well before the body and reflections.
+        noise(start, (.009 + .016 * weight) * scale, color * 1.9 * vary(.12),
+          force * (1.15 + report * 1.8), { lowCut: 640 + report * 850, attack: .00018, drop: 6, texture: bodyTexture });
+        noise(start, body, color * .65, force * (1.3 + weight * .7),
+          { lowCut: 120 + report * 150, attack: .0005, drop: 6.7, texture: bodyTexture });
+        noise(start, body * 1.3, bass, force * (1 + weight * 2.9),
+          { lowCut: 26, attack: .0018 + weight * .001, drop: 4.3, texture: bodyTexture });
+        noise(start + .011, tail, color * .22, force * (.15 + weight * .7),
+          { lowCut: 49, attack: .008, drop: 4.5, texture: bodyTexture });
+
+        if (room) {
+          for (const [delay, level] of [[.026, .72], [.051, .49], [.084, .32], [.137, .24]]) {
+            noise(start + delay * vary(.17), tail * (.5 + delay * 5), color / (2 + delay * 19),
+              force * room * level, { lowCut: 68, attack: .001 + delay * .08, drop: 4.2, texture: bodyTexture });
+          }
+        }
+      }
+    }
+
     const recipes = {
       impact() {
         const size = clamp(duration / preset.duration, .32, 2.5);
@@ -150,6 +186,10 @@
         }
       },
       shot() {
+        if (modernShot) {
+          firearm();
+          return;
+        }
         for (let i = 0; i < preset.count; i++) {
           const start = i * duration * .72 / preset.count * vary(.028);
           const weight = preset.weight;
@@ -194,7 +234,7 @@
     recipes[preset.recipe]();
 
     const delay = Math.round(sampleRate * (preset.recipe === 'shot' ? .072 : .043));
-    const echo = settings.space / 100 * .53;
+    const echo = modernShot ? 0 : settings.space / 100 * .53;
     const drive = 1 + settings.drive / 17;
     const hold = retro ? 6 + (settings.brightness < 45 ? 2 : 0) : 1;
     let peak = 0;
@@ -208,7 +248,7 @@
         held = Math.tanh(samples[i] * drive);
         if (retro) held = Math.round(held * 127) / 127;
       }
-      const fade = Math.min(1, i / 48, (samples.length - 1 - i) / 220);
+      const fade = Math.min(1, i / (modernShot ? 8 : 48), (samples.length - 1 - i) / 220);
       samples[i] = held * fade;
       peak = Math.max(peak, Math.abs(samples[i]));
     }

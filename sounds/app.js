@@ -1,5 +1,5 @@
 (() => {
-  const { categories, materials, presets, byId, impact } = SoundCatalog;
+  const { categories, materials, entries, collision, byId, impact } = SoundCatalog;
   const { styles, fields, create, restore, render, aiff } = SoundEngine;
   const $ = selector => document.querySelector(selector);
   const make = (tag, content, className) => {
@@ -51,13 +51,16 @@
     select.add(new Option(label, value));
   }
   const categorySelect = $('#category');
+  const materialForm = $('#material-form');
+  const materialA = $('#material-a');
+  const materialB = $('#material-b');
   option(categorySelect, '', 'Все категории');
   for (const [id, label] of Object.entries(categories)) option(categorySelect, id, label);
   for (const [id, { name }] of Object.entries(materials)) {
-    option($('#material-a'), id, name);
-    option($('#material-b'), id, name);
+    option(materialA, id, name);
+    option(materialB, id, name);
   }
-  $('#material-b').value = 'wood';
+  materialB.value = 'wood';
 
   for (const [key, field] of Object.entries(fields)) {
     const label = make('label', '', 'control');
@@ -96,19 +99,22 @@
     const content = document.createDocumentFragment();
     for (const [id, name] of Object.entries(categories)) {
       if (category && category !== id) continue;
-      const matches = presets.filter(preset => {
+      const matches = entries.filter(preset => {
         if (preset.category !== id) return false;
-        const generic = preset.materials?.some(material => ['steel', 'iron', 'aluminum', 'copper'].includes(material))
-          ? 'металла' : '';
         const aliases = preset.category === 'ui' && preset.recipe === 'impact' ? 'щелчок клик' : searchAliases[preset.recipe];
-        const haystack = [preset.name, name, generic, aliases].join(' ').toLocaleLowerCase('ru');
+        const haystack = [preset.name, name, preset.keywords, aliases].join(' ').toLocaleLowerCase('ru');
         return search.every(word => haystack.includes(word));
       });
       if (!matches.length) continue;
       content.append(make('h3', name, 'group-label'));
       for (const preset of matches) {
         const entry = button(preset.name, () => {
-          generate(preset.id);
+          if (preset === collision) {
+            if (materialForm.hidden) generate(impact(materialA.value, materialB.value).id);
+            materialA.focus({ preventScroll: true });
+          } else {
+            generate(preset.id);
+          }
           if (matchMedia('(max-width: 650px)').matches) $('.editor').scrollIntoView({ block: 'start' });
         }, 'preset');
         entry.dataset.preset = preset.id;
@@ -120,14 +126,16 @@
       count += matches.length;
     }
     if (!count) content.append(make('p', 'По этому запросу ничего нет.', 'empty'));
-    $('#catalog-count').textContent = count === presets.length ? count : count + ' / ' + presets.length;
+    $('#catalog-count').textContent = count === entries.length ? count : count + ' / ' + entries.length;
     $('#presets').replaceChildren(content);
     markPreset();
   }
 
   function markPreset() {
+    const preset = byId[current?.presetId];
+    const active = preset?.category === collision.category ? collision.id : preset?.id;
     for (const entry of $('#presets').querySelectorAll('button')) {
-      if (entry.dataset.preset === current?.presetId) entry.setAttribute('aria-current', 'true');
+      if (entry.dataset.preset === active) entry.setAttribute('aria-current', 'true');
       else entry.removeAttribute('aria-current');
     }
   }
@@ -272,8 +280,11 @@
     stop();
     current = settings;
     const preset = byId[current.presetId];
-    $('#sound-title').textContent = preset.name;
-    $('#sound-category').textContent = categories[preset.category];
+    const isCollision = preset.category === collision.category;
+    materialForm.hidden = !isCollision;
+    if (isCollision) [materialA.value, materialB.value] = preset.materials;
+    $('#sound-title').textContent = isCollision ? collision.name : preset.name;
+    $('#sound-category').textContent = isCollision ? preset.name : categories[preset.category];
     $('#status').textContent = '';
     styleButtons.forEach(control => control.setAttribute('aria-pressed', String(current.style === control.dataset.style)));
     markPreset();
@@ -298,16 +309,15 @@
 
   $('#search').oninput = renderCatalog;
   categorySelect.onchange = renderCatalog;
-  $('#material-form').onsubmit = event => {
+  materialForm.onsubmit = event => {
     event.preventDefault();
-    generate(impact($('#material-a').value, $('#material-b').value).id);
-    if (matchMedia('(max-width: 650px)').matches) $('.editor').scrollIntoView({ block: 'start' });
+    generate(impact(materialA.value, materialB.value).id);
   };
   $('#play').onclick = () => source ? stop() : play();
   autoplay.onchange = persist;
   $('#reroll').onclick = () => generate(current.presetId);
   $('#reset').onclick = () => {
-    selectSound(create(current.presetId, current.style, current.seed), autoplay.checked);
+    selectSound(create(current.presetId, current.style, current.seed, current.shotVersion), autoplay.checked);
   };
   styleButtons.forEach(control => {
     control.onclick = () => {

@@ -26,15 +26,6 @@
     <div class="catalog-tools">
       <input id="search" type="search" aria-label="Поиск пресетов" placeholder="Поиск звука…">
       <select id="category" aria-label="Категория пресетов"></select>
-      <form id="material-form">
-        <span>Пара материалов</span>
-        <div class="material-pair">
-          <select id="material-a" aria-label="Первый материал"></select>
-          <span aria-hidden="true">×</span>
-          <select id="material-b" aria-label="Второй материал"></select>
-        </div>
-        <button type="submit">Создать удар</button>
-      </form>
     </div>
     <div class="preset-list" id="presets"></div>
   </aside>
@@ -50,6 +41,14 @@
         <button type="button" data-style="retro">8-битный</button>
       </div>
     </div>
+    <form id="material-form" aria-label="Пара материалов" hidden>
+      <div class="material-pair">
+        <select id="material-a" aria-label="Первый материал"></select>
+        <span aria-hidden="true">×</span>
+        <select id="material-b" aria-label="Второй материал"></select>
+      </div>
+      <button type="submit">Создать удар</button>
+    </form>
     <div class="scope">
       <canvas id="waveform" role="img" aria-label="Форма звуковой волны"></canvas>
       <div class="scope-meta"><span>0 мс</span><span id="duration"></span></div>

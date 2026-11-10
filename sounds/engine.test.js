@@ -17,6 +17,7 @@ test('каталог содержит все пары материалов бе�
     }
   }
   assert.equal(pairs.size, materials.length * (materials.length + 1) / 2);
+  assert.deepEqual(catalog.entries.filter(entry => entry.category === 'impacts'), [catalog.collision]);
 });
 
 test('каждый пресет в обоих режимах создаёт ненулевой PCM без перегрузки', () => {
@@ -46,6 +47,20 @@ test('запись истории восстанавливает PCM, а нов�
   assert.ok(samples({ ...settings, volume: 0 }).every(sample => sample === 0));
   assert.equal(engine.restore({ ...settings, duration: 4000 }).duration, 3000);
   assert.equal(engine.restore({ ...settings, presetId: 'missing' }), null);
+});
+
+test('новый выстрел меняет сигнал, старая история сохраняет прежнюю версию', () => {
+  const legacy = engine.create('shotgun', 'natural', 2341, 1);
+  const stored = { ...legacy };
+  delete stored.shotVersion;
+  const updated = engine.create('shotgun', 'natural', 2341);
+  const samples = settings => engine.render(settings).getChannelData(0);
+  assert.deepEqual(engine.restore(stored), legacy);
+  assert.deepEqual(samples(engine.restore(stored)), samples(legacy));
+  assert.deepEqual(samples(engine.restore(updated)), samples(updated));
+  assert.notDeepEqual(samples(updated), samples(legacy));
+  assert.notDeepEqual(samples({ ...updated, space: 0 }), samples(updated));
+  assert.ok(samples({ ...updated, texture: 0 }).some(sample => Math.abs(sample) > .05));
 });
 
 test('WAV и AIFF сохраняют один и тот же 16-битный моно сигнал', async () => {
